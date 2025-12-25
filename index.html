@@ -3,38 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plyr Full Link Auto Mode</title>
+    <title>Plyr Full Link Query</title>
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; }
-        .video-container { width: 100%; max-width: 100%; position: relative; overflow: hidden; }
-        .plyr__video-embed iframe { pointer-events: none; transform: scale(1.02); }
+        .video-container { width: 100%; max-width: 100%; position: relative; }
+        /* YouTube ke links block karne ke liye strict mode */
+        .plyr__video-embed iframe { pointer-events: none; transform: scale(1.05); }
     </style>
 </head>
 <body>
 
-<div class="video-container">
-    <div id="player" data-plyr-provider="youtube"></div>
-</div>
+<div class="video-container" id="vid-holder">
+    </div>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
 <script>
-    // 1. Function jo full link se ID extract karega
-    function extractVideoID(url) {
+    // 1. Full URL se Video ID nikalne wala function
+    function getIDfromAnyLink(url) {
+        if (!url) return ""; // Default agar link na mile
+        
+        // Regex jo har tarah ki YouTube link handle karta hai
         const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
         const match = url.match(regExp);
-        return (match && match[7].length == 11) ? match[7] : false;
+        
+        // Agar full link hai to ID nikalo, warna direct ID return karo
+        return (match && match[7].length == 11) ? match[7] : url;
     }
 
-    // 2. Yahan apni FULL LINK dalein (Koi bhi link)
-    const youtubeFullLink = "https://www.youtube.com/watch?v=lcw4TDMBjZA"; 
-    
-    // Auto ID nikalna
-    const autoId = extractVideoID(youtubeFullLink);
+    // 2. Browser URL se "?id=" parameter lena
+    const urlParams = new URLSearchParams(window.location.search);
+    const rawLink = urlParams.get('id'); // Link ya ID yahan aayegi
+    const finalVideoId = getIDfromAnyLink(rawLink);
 
-    // 3. Player setup
+    // 3. Player ka HTML inject karna
+    document.getElementById('vid-holder').innerHTML = `
+        <div id="player" data-plyr-provider="youtube" data-plyr-embed-id="${finalVideoId}"></div>
+    `;
+
+    // 4. Plyr ko start karna
     const player = new Plyr('#player', {
         controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
+        youtube: { 
+            noCookie: true, 
+            rel: 0, 
+            modestbranding: 1, 
+            iv_load_policy: 3 
+        }
+    });
+
+    // End hone par auto-restart logic
+    player.on('ended', () => { player.restart(); player.pause(); });
+</script>
+
+</body>
+</html>        controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
         youtube: { noCookie: true, rel: 0, modestbranding: 1, iv_load_policy: 3 }
     });
 
