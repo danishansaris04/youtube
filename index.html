@@ -3,13 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plyr Full Link Query</title>
+    <title>Plyr Responsive Fit</title>
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; }
-        .video-container { width: 100%; max-width: 100%; position: relative; }
-        /* YouTube ke links block karne ke liye strict mode */
-        .plyr__video-embed iframe { pointer-events: none; transform: scale(1.05); }
+        /* Body ko full screen banaya */
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: #000; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden; /* Scrollbars hatane ke liye */
+        }
+
+        /* Container ko responsive banaya */
+        .video-container { 
+            width: 100vw;  /* Screen ki puri width */
+            max-width: 100%;
+            height: auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Plyr ki width ko control karne ke liye */
+        .plyr {
+            width: 100%;
+            max-height: 100vh; /* Video screen se bahar na jaye */
+        }
+
+        /* YouTube iframe styling */
+        .plyr__video-embed iframe { 
+            pointer-events: none; 
+            transform: scale(1.05); /* Black borders hatane ke liye */
+        }
     </style>
 </head>
 <body>
@@ -19,59 +48,35 @@
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
 <script>
-    // 1. Full URL se Video ID nikalne wala function
     function getIDfromAnyLink(url) {
-        if (!url) return ""; // Default agar link na mile
-        
-        // Regex jo har tarah ki YouTube link handle karta hai
+        if (!url) return ""; 
         const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
         const match = url.match(regExp);
-        
-        // Agar full link hai to ID nikalo, warna direct ID return karo
         return (match && match[7].length == 11) ? match[7] : url;
     }
 
-    // 2. Browser URL se "?id=" parameter lena
     const urlParams = new URLSearchParams(window.location.search);
-    const rawLink = urlParams.get('id'); // Link ya ID yahan aayegi
+    const rawLink = urlParams.get('id'); 
     const finalVideoId = getIDfromAnyLink(rawLink);
 
-    // 3. Player ka HTML inject karna
-    document.getElementById('vid-holder').innerHTML = `
-        <div id="player" data-plyr-provider="youtube" data-plyr-embed-id="${finalVideoId}"></div>
-    `;
+    if(finalVideoId) {
+        document.getElementById('vid-holder').innerHTML = `
+            <div id="player" data-plyr-provider="youtube" data-plyr-embed-id="${finalVideoId}"></div>
+        `;
 
-    // 4. Plyr ko start karna
-    const player = new Plyr('#player', {
-        controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
-        youtube: { 
-            noCookie: true, 
-            rel: 0, 
-            modestbranding: 1, 
-            iv_load_policy: 3 
-        }
-    });
+        const player = new Plyr('#player', {
+            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
+            youtube: { 
+                noCookie: true, 
+                rel: 0, 
+                modestbranding: 1, 
+                iv_load_policy: 3,
+                autoplay: 0 // Aap chahen to 1 kar sakte hain
+            }
+        });
 
-    // End hone par auto-restart logic
-    player.on('ended', () => { player.restart(); player.pause(); });
-</script>
-
-</body>
-</html>        controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
-        youtube: { noCookie: true, rel: 0, modestbranding: 1, iv_load_policy: 3 }
-    });
-
-    // 4. Source load karna agar ID mil gayi ho
-    if (autoId) {
-        player.source = {
-            type: 'video',
-            sources: [{ src: autoId, provider: 'youtube' }]
-        };
-    } else {
-        alert("Link sahi nahi hai!");
+        player.on('ended', () => { player.restart(); player.pause(); });
     }
-
-    player.on('ended', () => { player.restart(); player.pause(); });
 </script>
 
 </body>
