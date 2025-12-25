@@ -3,80 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plyr Responsive Fit</title>
+    <title>Video Player - Secure Access</title>
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     <style>
-        /* Body ko full screen banaya */
-        body, html { 
-            margin: 0; 
-            padding: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: #000; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            overflow: hidden; /* Scrollbars hatane ke liye */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        .video-container { width: 100vw; max-width: 100%; display: none; } /* Default hidden */
+        
+        /* Access Denied Styling */
+        #denied-message {
+            display: none;
+            text-align: center;
+            color: white;
+            padding: 20px;
+        }
+        .error-code { font-size: 80px; font-weight: bold; color: #ff4b2b; margin-bottom: 10px; }
+        .error-text { font-size: 20px; color: #ccc; }
+        .btn-back { 
+            margin-top: 20px; 
+            padding: 10px 25px; 
+            background: #ff4b2b; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            text-decoration: none;
+            display: inline-block;
         }
 
-        /* Container ko responsive banaya */
-        .video-container { 
-            width: 100vw;  /* Screen ki puri width */
-            max-width: 100%;
-            height: auto;
-            display: flex;
-            justify-content: center;
-        }
-
-        /* Plyr ki width ko control karne ke liye */
-        .plyr {
-            width: 100%;
-            max-height: 100vh; /* Video screen se bahar na jaye */
-        }
-
-        /* YouTube iframe styling */
-        .plyr__video-embed iframe { 
-            pointer-events: none; 
-            transform: scale(1.05); /* Black borders hatane ke liye */
-        }
+        .plyr__video-embed iframe { pointer-events: none; transform: scale(1.05); }
     </style>
 </head>
 <body>
 
-<div class="video-container" id="vid-holder">
+    <div id="denied-message">
+        <div class="error-code">403</div>
+        <div class="error-text">Access Denied!</div>
+        <p>You don't have permission to access this player directly.</p>
+        <a href="https://dflixmovie.netlify.app" class="btn-back">Go to Home</a>
     </div>
+
+    <div class="video-container" id="vid-holder"></div>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
 <script>
-    function getIDfromAnyLink(url) {
-        if (!url) return ""; 
-        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[7].length == 11) ? match[7] : url;
-    }
+    (function() {
+        // 1. Allowed Domains List
+        const allowedDomains = [
+            "dflixmovie.netlify.app",
+            "dflixseries.netlify.app"
+        ];
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const rawLink = urlParams.get('id'); 
-    const finalVideoId = getIDfromAnyLink(rawLink);
+        // 2. Referrer Check Logic
+        const referrer = document.referrer;
+        let isAllowed = false;
 
-    if(finalVideoId) {
-        document.getElementById('vid-holder').innerHTML = `
-            <div id="player" data-plyr-provider="youtube" data-plyr-embed-id="${finalVideoId}"></div>
-        `;
+        if (referrer) {
+            allowedDomains.forEach(domain => {
+                if (referrer.includes(domain)) {
+                    isAllowed = true;
+                }
+            });
+        }
 
-        const player = new Plyr('#player', {
-            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
-            youtube: { 
-                noCookie: true, 
-                rel: 0, 
-                modestbranding: 1, 
-                iv_load_policy: 3,
-                autoplay: 0 // Aap chahen to 1 kar sakte hain
+        // TESTING NOTE: Agar aap localhost pe test kar rahe hain, to niche wali line uncomment karein:
+        // isAllowed = true; 
+
+        const vidHolder = document.getElementById('vid-holder');
+        const deniedMsg = document.getElementById('denied-message');
+
+        if (isAllowed) {
+            // Agar access allowed hai to player dikhao
+            vidHolder.style.display = "block";
+            loadPlayer();
+        } else {
+            // Agar allowed nahi hai to error dikhao
+            deniedMsg.style.display = "block";
+        }
+
+        function loadPlayer() {
+            function getIDfromAnyLink(url) {
+                if (!url) return "";
+                const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+                const match = url.match(regExp);
+                return (match && match[7].length == 11) ? match[7] : url;
             }
-        });
 
-        player.on('ended', () => { player.restart(); player.pause(); });
-    }
+            const urlParams = new URLSearchParams(window.location.search);
+            const rawLink = urlParams.get('id');
+            const finalVideoId = getIDfromAnyLink(rawLink);
+
+            if (finalVideoId) {
+                vidHolder.innerHTML = `<div id="player" data-plyr-provider="youtube" data-plyr-embed-id="${finalVideoId}"></div>`;
+                const player = new Plyr('#player', {
+                    controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
+                    youtube: { noCookie: true, rel: 0, modestbranding: 1, iv_load_policy: 3 }
+                });
+                player.on('ended', () => { player.restart(); player.pause(); });
+            }
+        }
+    })();
 </script>
 
 </body>
