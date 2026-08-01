@@ -47,24 +47,7 @@
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
 <script>
-    (function() {
-        // 1. Allowed Domains List
-        const allowedDomains = [
-            "dflixmovie.netlify.app",
-            "dflixseries.netlify.app"
-        ];
 
-        // 2. Referrer Check Logic
-        const referrer = document.referrer;
-        let isAllowed = false;
-
-        if (referrer) {
-            allowedDomains.forEach(domain => {
-                if (referrer.includes(domain)) {
-                    isAllowed = true;
-                }
-            });
-        }
 
         // TESTING NOTE: Agar aap localhost pe test kar rahe hain, to niche wali line uncomment karein:
         // isAllowed = true; 
